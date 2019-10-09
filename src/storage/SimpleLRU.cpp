@@ -33,7 +33,10 @@ namespace Afina {
                 node.value.erase();
                 node.value = value;
             } else {
-                std::unique_ptr<lru_node> new_node(new lru_node(key, value, nullptr, nullptr));
+                std::unique_ptr <lru_node> new_node(new lru_node);
+                new_node->key = key;
+                new_node->value = value;
+                new_node->next = nullptr;
                 storage_size += pair_size;
                 while (storage_size > _max_size) {
                     Delete(std::ref(_lru_head->key));
