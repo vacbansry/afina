@@ -28,7 +28,8 @@ namespace Network {
     namespace MTblocking {
 
 // See Server.h
-        ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl, std::size_t capacity, std::time_t read_timeout)
+        ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl,
+                               std::size_t capacity, std::time_t read_timeout)
             : Server(ps, pl, capacity, read_timeout) {}
 
 // See Server.h
