@@ -15,10 +15,12 @@ namespace Network {
  * # Network processors coordinator
  * Configure resources for the network processors and coordinates all work
  */
+
 class Server {
 public:
-    Server(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Afina::Logging::Service> pl)
-        : pStorage(ps), pLogging(pl) {}
+    Server(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Afina::Logging::Service> pl,
+            std::size_t capacity = 1000, std::time_t read_timeout = 5)
+        : pStorage(ps), pLogging(pl), _server_capacity(capacity), read_timeout(read_timeout) {}
     virtual ~Server() {}
 
     /**
@@ -55,6 +57,9 @@ protected:
      * Logging service to be used in order to report application progress
      */
     std::shared_ptr<Afina::Logging::Service> pLogging;
+    //std::time_t tv_sec;
+    std::size_t _server_capacity;
+    std::time_t read_timeout;
 };
 
 } // namespace Network
