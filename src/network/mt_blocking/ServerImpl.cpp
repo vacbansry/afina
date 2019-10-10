@@ -152,8 +152,7 @@ namespace Network {
             _logger->warn("Network stopped");
         }
 
-        void ServerImpl::Work(int client_socket)
-        {
+        void ServerImpl::Work(int client_socket) {
             // Here is connection state
             // - parser: parse state of the stream
             // - command_to_execute: last command parsed out of stream
