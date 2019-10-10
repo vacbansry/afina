@@ -3,7 +3,7 @@
 
 #include <atomic>
 #include <thread>
-
+#include <condition_variable>
 #include <afina/network/Server.h>
 
 namespace spdlog {
@@ -20,7 +20,8 @@ namespace MTblocking {
  */
 class ServerImpl : public Server {
 public:
-    ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl);
+    ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl,
+            std::size_t capacity = 1000, std::time_t read_timeout = 5);
     ~ServerImpl();
 
     // See Server.h
@@ -37,18 +38,27 @@ protected:
      * Method is running in the connection acceptor thread
      */
     void OnRun();
+    void Work (int client_socket);
 
 private:
     // Logger instance
     std::shared_ptr<spdlog::logger> _logger;
 
     // Atomic flag to notify threads when it is time to stop. Note that
-    // flag must be atomic in order to safely publisj changes cross thread
+    // flag must be atomic in order to safely publish changes cross thread
     // bounds
-    std::atomic<bool> running;
-
+    std::atomic <bool> running;
+    bool waiting_worker = false;
     // Server socket to accept connections on
     int _server_socket;
+
+    std::size_t count_connections = 0;
+
+    std::mutex communic_attempt;
+    std::mutex change_count;
+    std::mutex store_data;
+
+    std::condition_variable cond_var;
 
     // Thread to run network on
     std::thread _thread;
