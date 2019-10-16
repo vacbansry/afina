@@ -2,6 +2,7 @@
 #define AFINA_NETWORK_MT_BLOCKING_SERVER_H
 
 #include <atomic>
+#include <unordered_set>
 #include <thread>
 #include <condition_variable>
 #include <afina/network/Server.h>
@@ -54,10 +55,10 @@ private:
 
     std::size_t count_connections = 0;
 
-    std::mutex communic_attempt;
     std::mutex change_count;
+    std::mutex shut_down;
     std::mutex store_data;
-
+    std::unordered_set<int> _client_sockets;
     std::condition_variable cond_var;
 
     // Thread to run network on
