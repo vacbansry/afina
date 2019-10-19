@@ -8,10 +8,8 @@ namespace Concurrency {
         : low_watermark(lw), high_watermark(hw), max_queue_size(max_size), idle_time(idle_time) {
         std::lock_guard<std::mutex> _lock(mutex);
         while (threads.size() < low_watermark) {
-            std::cout << "HERE\n";
             free_threads++;
             threads.emplace_back(std::thread([this] { perform(this); }));
-            std::cout << "HERE\n";
             threads.back().detach();
         }
         state = State::kRun;
