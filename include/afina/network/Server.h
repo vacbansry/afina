@@ -57,7 +57,7 @@ protected:
      * Logging service to be used in order to report application progress
      */
     std::shared_ptr<Afina::Logging::Service> pLogging;
-    //std::time_t tv_sec;
+    
     std::size_t _server_capacity;
     std::time_t read_timeout;
 };
