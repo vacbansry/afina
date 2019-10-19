@@ -3,8 +3,7 @@
 namespace Afina {
     namespace Backend {
 
-// See MapBasedGlobalLockImpl.h
-
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Put(const std::string &key, const std::string &value) {
             std::size_t pair_size = key.size() + value.size();
             if (pair_size > _max_size) {
@@ -53,7 +52,7 @@ namespace Afina {
             return true;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {
             auto it = _lru_index.find(key);
             if (it == _lru_index.end()) {
@@ -62,7 +61,7 @@ namespace Afina {
             return false;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Set(const std::string &key, const std::string &value) {
             auto it = _lru_index.find(key);
             if (it != _lru_index.end()) {
@@ -71,7 +70,7 @@ namespace Afina {
             return false;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Delete(const std::string &key) {
             auto it = _lru_index.find(key);
             if (it != _lru_index.end()) {
@@ -94,7 +93,7 @@ namespace Afina {
             return false;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Get(const std::string &key, std::string &value) {
             auto it = _lru_index.find(key);
             if (it != _lru_index.end()) {
