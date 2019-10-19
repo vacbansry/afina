@@ -7,13 +7,13 @@ namespace Concurrency {
             std::size_t max_size, std::chrono::milliseconds idle_time)
         : low_watermark(lw), high_watermark(hw), max_queue_size(max_size), idle_time(idle_time) {
         while (threads.size() < low_watermark) {
-            std::thread th([this]{ perform(this); });
-            threads.emplace_back(std::ref(th));
-            th.detach();
+            std::cout << "HERE\n";
+            threads.emplace_back(std::thread([this] { perform(this); }));
+            std::cout << "HERE\n";
+            threads.back().detach();
         }
         free_threads = low_watermark;
         std::lock_guard<std::mutex> _lock(mutex);
-        std::cout << "POOL IS READY\n";
         state = State::kRun;
     }
 
@@ -22,6 +22,7 @@ namespace Concurrency {
     }
 
     void Executor::Stop(bool await) {
+        std::lock_guard<std::mutex> _lock(mutex);
         state = State::kStopping;
         empty_condition.notify_all();
         if (await) {
@@ -56,7 +57,7 @@ namespace Concurrency {
             } else {
                 std::function<void()> task = executor->tasks.front();
                 executor->tasks.pop_front();
-                task();
+                std::thread([task] { task(); }).detach();
             }
         }
         {

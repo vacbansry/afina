@@ -63,10 +63,10 @@ public:
         current_queue_size++;
         tasks.push_back(exec);
         if (free_threads == 0 && threads.size() < high_watermark) {
-            std::thread th([this] { perform(this); });
-            threads.emplace_back(std::ref(th));
-            th.detach();
-        } else {
+            free_threads++;
+            threads.emplace_back(std::thread([this] { perform(this); }));
+            threads.back().detach();
+        } else if (threads.size() < high_watermark) {
             empty_condition.notify_one();
         }
         return true;
@@ -86,7 +86,7 @@ private:
      */
     friend void perform(Executor *executor);
 
-    std::vector<std::reference_wrapper<std::thread>>::iterator find_thread() {
+    std::vector<std::thread>::iterator find_thread() {
         std::thread::id thread_id = std::this_thread::get_id();
         auto it = std::find_if(threads.begin(), threads.end(),
                                [thread_id](std::thread &t) { return (t.get_id() == thread_id); });
@@ -105,7 +105,7 @@ private:
     /**
      * Vector of actual threads that perform execution
      */
-    std::vector<std::reference_wrapper<std::thread>> threads;
+    std::vector<std::thread> threads;
 
     /**
      * Task queue
