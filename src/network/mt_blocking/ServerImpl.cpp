@@ -20,15 +20,18 @@
 #include <afina/Storage.h>
 #include <afina/execute/Command.h>
 #include <afina/logging/Service.h>
+#include <afina/concurrency/Executor.h>
 
 #include "protocol/Parser.h"
 
 namespace Afina {
 namespace Network {
-    namespace MTblocking {
+namespace MTblocking {
 
 // See Server.h
-        ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl, std::size_t capacity, std::time_t read_timeout) : Server(ps, pl, capacity, read_timeout) {}
+        ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl,
+                std::size_t capacity, std::time_t read_timeout)
+            : Server(ps, pl, capacity, read_timeout) {}
 
 // See Server.h
         ServerImpl::~ServerImpl() {}
@@ -80,17 +83,26 @@ namespace Network {
         void ServerImpl::Stop() {
             running.store(false);
             shutdown(_server_socket, SHUT_RDWR);
+            for (auto socket: _client_sockets) {
+                shutdown(socket, SHUT_RDWR);
+            }
         }
 
 // See Server.h
         void ServerImpl::Join() {
             assert(_thread.joinable());
+            std::unique_lock<std::mutex> _lock(shut_down);
+            while (count_connections) {
+                cond_var.wait(_lock);
+            }
             _thread.join();
             close(_server_socket);
         }
 
 // See Server.h
         void ServerImpl::OnRun() {
+            Concurrency::Executor executor(5, _server_capacity, _server_capacity,
+                    std::chrono::duration<int64_t, std::milli>(read_timeout));
             while (running.load()) {
                 _logger->debug("waiting for connection...");
 
@@ -128,30 +140,19 @@ namespace Network {
                 // TODO: Start new thread and process data from/to connection
                 {
                     std::lock_guard<std::mutex> lock(change_count);
-                    if (count_connections < _server_capacity) {
+                    if (count_connections < _server_capacity && executor.Execute(&ServerImpl::Work, this, client_socket)) {
                         count_connections++;
-                        std::thread([this, client_socket]() {
-                            ServerImpl::Work(client_socket);
-                        }).join();
+                        _client_sockets.insert(client_socket);
                     } else {
                         close(client_socket);
                     }
-                }
-            }
-
-            {
-                std::unique_lock<std::mutex> lock(communic_attempt);
-                waiting_worker = true;
-                while (count_connections == _server_capacity) {
-                    cond_var.wait(lock);
                 }
             }
             // Cleanup on exit...
             _logger->warn("Network stopped");
         }
 
-        void ServerImpl::Work(int client_socket)
-        {
+        void ServerImpl::Work(int client_socket) {
             // Here is connection state
             // - parser: parse state of the stream
             // - command_to_execute: last command parsed out of stream
@@ -166,10 +167,11 @@ namespace Network {
             // - read commands until socket alive
             // - execute each command
             // - send response
+
             try {
                 int readed_bytes = -1;
                 char client_buffer[4096];
-                while ((readed_bytes = read(client_socket, client_buffer, sizeof(client_buffer))) > 0) {
+                while (running.load() && (readed_bytes = read(client_socket, client_buffer, sizeof(client_buffer))) > 0) {
                     _logger->debug("Got {} bytes from socket", readed_bytes);
 
                     // Single block of data readed from the socket could trigger inside actions a multiple times,
@@ -218,15 +220,13 @@ namespace Network {
                             _logger->debug("Start command execution");
 
                             std::string result;
-                            std::lock_guard <std::mutex> lock(store_data);
+                            std::lock_guard<std::mutex> lock(store_data);
                             command_to_execute->Execute(*pStorage, argument_for_command, result);
-
                             // Send response
                             result += "\r\n";
                             if (send(client_socket, result.data(), result.size(), 0) <= 0) {
                                 throw std::runtime_error("Failed to send response");
                             }
-
                             // Prepare for the next command
                             command_to_execute.reset();
                             argument_for_command.resize(0);
@@ -234,30 +234,24 @@ namespace Network {
                         }
                     } // while (readed_bytes)
                 }
-
                 if (readed_bytes == 0) {
                     _logger->debug("Connection closed");
                 } else {
                     throw std::runtime_error(std::string(strerror(errno)));
                 }
             } catch (std::runtime_error &ex) {
-                _logger->error("SERVER ERROR ON {}: {}", client_socket, ex.what());
+                _logger->error("Server error on {}: {}", client_socket, ex.what());
             }
 
             // We are done with this connection
             close(client_socket);
 
-            // Prepare for the next command: just in case if connection was closed in the middle of executing something
-            command_to_execute.reset();
-            argument_for_command.resize(0);
-            parser.Reset();
-
             {
                 std::lock_guard <std::mutex> guard(change_count);
                 count_connections--;
-                if (waiting_worker) {
-                    waiting_worker = false;
-                    cond_var.notify_one();
+                _client_sockets.erase(client_socket);
+                if (!running.load() && !count_connections) {
+                    cond_var.notify_all();
                 }
             }
         }
