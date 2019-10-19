@@ -6,14 +6,14 @@ namespace Concurrency {
     Executor::Executor(std::size_t lw, std::size_t hw,
             std::size_t max_size, std::chrono::milliseconds idle_time)
         : low_watermark(lw), high_watermark(hw), max_queue_size(max_size), idle_time(idle_time) {
+        std::lock_guard<std::mutex> _lock(mutex);
         while (threads.size() < low_watermark) {
             std::cout << "HERE\n";
+            free_threads++;
             threads.emplace_back(std::thread([this] { perform(this); }));
             std::cout << "HERE\n";
             threads.back().detach();
         }
-        free_threads = low_watermark;
-        std::lock_guard<std::mutex> _lock(mutex);
         state = State::kRun;
     }
 

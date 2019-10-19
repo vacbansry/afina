@@ -63,9 +63,12 @@ public:
         current_queue_size++;
         tasks.push_back(exec);
         if (free_threads == 0 && threads.size() < high_watermark) {
-            free_threads++;
-            threads.emplace_back(std::thread([this] { perform(this); }));
-            threads.back().detach();
+            {
+                std::lock_guard<std::mutex> _lock(mutex);
+                free_threads++;
+                threads.emplace_back(std::thread([this] { perform(this); }));
+                threads.back().detach();
+            }
         } else if (threads.size() < high_watermark) {
             empty_condition.notify_one();
         }
