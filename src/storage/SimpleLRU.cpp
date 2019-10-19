@@ -3,8 +3,7 @@
 namespace Afina {
     namespace Backend {
 
-// See MapBasedGlobalLockImpl.h
-
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Put(const std::string &key, const std::string &value) {
             std::size_t pair_size = key.size() + value.size();
             if (pair_size > _max_size) {
@@ -30,13 +29,9 @@ namespace Afina {
                 while (storage_size > _max_size) {
                     Delete(_lru_head->key);
                 }
-                node.value.erase();
                 node.value = value;
             } else {
-                std::unique_ptr <lru_node> new_node(new lru_node);
-                new_node->key = key;
-                new_node->value = value;
-                new_node->next = nullptr;
+                std::unique_ptr<lru_node> new_node(new lru_node(key, value, nullptr, nullptr));
                 storage_size += pair_size;
                 while (storage_size > _max_size) {
                     Delete(std::ref(_lru_head->key));
@@ -57,7 +52,7 @@ namespace Afina {
             return true;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::PutIfAbsent(const std::string &key, const std::string &value) {
             auto it = _lru_index.find(key);
             if (it == _lru_index.end()) {
@@ -66,7 +61,7 @@ namespace Afina {
             return false;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Set(const std::string &key, const std::string &value) {
             auto it = _lru_index.find(key);
             if (it != _lru_index.end()) {
@@ -75,7 +70,7 @@ namespace Afina {
             return false;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Delete(const std::string &key) {
             auto it = _lru_index.find(key);
             if (it != _lru_index.end()) {
@@ -86,7 +81,7 @@ namespace Afina {
                 if (node.prev) {
                     if (node.next) {
                         node.next->prev = node.prev;
-                    }
+                    }   
                     node.prev->next = std::move(node.next);
                 } else {
                     _lru_head = std::move(_lru_head->next);
@@ -98,7 +93,7 @@ namespace Afina {
             return false;
         }
 
-// See MapBasedGlobalLockImpl.h
+        // See MapBasedGlobalLockImpl.h
         bool SimpleLRU::Get(const std::string &key, std::string &value) {
             auto it = _lru_index.find(key);
             if (it != _lru_index.end()) {
