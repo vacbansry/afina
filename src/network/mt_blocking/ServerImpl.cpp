@@ -81,11 +81,11 @@ namespace MTblocking {
 // See Server.h
         void ServerImpl::Stop() {
             running.store(false);
-            shutdown(_server_socket, SHUT_RDWR);
             std::lock_guard<std::mutex> _lock(change_count);
             for (auto socket: _client_sockets) {
                 shutdown(socket, SHUT_RDWR);
             }
+            shutdown(_server_socket, SHUT_RDWR);
         }
 
 // See Server.h
