@@ -250,7 +250,7 @@ namespace MTblocking {
                 count_connections--;
                 _client_sockets.erase(client_socket);
                 if (!running.load() && !count_connections) {
-                    cond_var.notify_all();
+                    cond_var.notify_one();
                 }
             }
         }
