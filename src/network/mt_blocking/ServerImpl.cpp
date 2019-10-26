@@ -136,7 +136,7 @@ namespace MTblocking {
             // TODO: Start new thread and process data from/to connection
             {
                 std::lock_guard<std::mutex> lock(change_count);
-                if (count_connections < _server_capacity) {
+                if (running.load() && count_connections < _server_capacity) {
                     _client_sockets.insert(client_socket);
                     std::thread([this, client_socket]() { ServerImpl::Work(client_socket); }).detach();
                 } else {
