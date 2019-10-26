@@ -56,8 +56,6 @@ private:
     std::size_t count_connections = 0;
 
     std::mutex change_count;
-    std::mutex shut_down;
-    std::mutex store_data;
     std::unordered_set<int> _client_sockets;
     std::condition_variable cond_var;
 
