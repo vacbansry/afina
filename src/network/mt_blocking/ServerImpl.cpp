@@ -70,6 +70,7 @@ namespace MTblocking {
         }
 
         if (listen(_server_socket, 5) == -1) {
+
             close(_server_socket);
             throw std::runtime_error("Socket listen() failed");
         }
