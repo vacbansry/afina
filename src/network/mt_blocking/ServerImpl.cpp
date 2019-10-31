@@ -237,24 +237,25 @@ namespace MTblocking {
             _logger->error("Server error on {}: {}", client_socket, ex.what());
         }
 
-            // We are done with this connection
-            close(client_socket);
-
-            {
-                std::lock_guard <std::mutex> guard(change_count);
-                count_connections--;
-                _client_sockets.erase(client_socket);
-                if (!running.load() && !count_connections) {
-                    cond_var.notify_all();
-                }
         // We are done with this connection
         close(client_socket);
 
         {
-            std::lock_guard <std::mutex> guard(change_count);
+            std::lock_guard<std::mutex> guard(change_count);
+            count_connections--;
             _client_sockets.erase(client_socket);
-            if (!running.load() && !_client_sockets.size()) {
+            if (!running.load() && !count_connections) {
                 cond_var.notify_all();
+            }
+            // We are done with this connection
+            close(client_socket);
+
+            {
+                std::lock_guard<std::mutex> guard(change_count);
+                _client_sockets.erase(client_socket);
+                if (!running.load() && !_client_sockets.size()) {
+                    cond_var.notify_all();
+                }
             }
         }
     }
