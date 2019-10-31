@@ -257,11 +257,9 @@ void ServerImpl::Work(int client_socket) {
             }
         }
     }
-<<<<<<< HEAD
-=======
+
 }
 
->>>>>>> HW4
 } // namespace MTblocking
 } // namespace Network
 } // namespace Afina
