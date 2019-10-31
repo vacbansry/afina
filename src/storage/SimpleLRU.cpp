@@ -81,7 +81,7 @@ namespace Afina {
                 if (node.prev) {
                     if (node.next) {
                         node.next->prev = node.prev;
-                    }   
+                    }
                     node.prev->next = std::move(node.next);
                 } else {
                     _lru_head = std::move(_lru_head->next);
