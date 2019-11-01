@@ -75,8 +75,6 @@ public:
         return true;
     }
 
-    //void perform(Executor *executor);
-
 private:
     // No copy/move/assign allowed
     Executor(const Executor &);            // = delete;
