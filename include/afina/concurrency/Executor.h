@@ -126,7 +126,6 @@ private:
     std::chrono::milliseconds idle_time;
 
     std::condition_variable _stop_pool;
-    std::mutex _stop_lock;
 
     std::size_t free_threads;
     std::size_t current_queue_size = 0;
