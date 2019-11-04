@@ -73,7 +73,7 @@ private:
     // Logger to be used
     std::shared_ptr<spdlog::logger> _logger;
 
-    // Flag signals that thread should continue to operate
+    // Flag signals that thread should continue to operate`
     std::atomic<bool> isRunning;
 
     // Thread serving requests in this worker
@@ -81,6 +81,7 @@ private:
 
     // EPOLL descriptor using for events processing
     int _epoll_fd;
+
 };
 
 } // namespace MTnonblock
