@@ -8,27 +8,32 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <chrono>
+#include <algorithm>
+#include <iostream>
 
 namespace Afina {
 namespace Concurrency {
 
 /**
- * # Thread pool
- */
+* # Thread pool
+*/
 class Executor {
+public:
     enum class State {
         // Threadpool is fully operational, tasks could be added and get executed
-        kRun,
+                kRun,
 
         // Threadpool is on the way to be shutdown, no ned task could be added, but existing will be
         // completed as requested
-        kStopping,
+                kStopping,
 
-        // Threadppol is stopped
-        kStopped
+        // Threadpool is stopped
+                kStopped
     };
 
-    Executor(std::string name, int size);
+    Executor(std::size_t lw, std::size_t hw, std::size_t max_size, std::chrono::milliseconds idle_time);
+
     ~Executor();
 
     /**
@@ -49,15 +54,24 @@ class Executor {
     template <typename F, typename... Types> bool Execute(F &&func, Types... args) {
         // Prepare "task"
         auto exec = std::bind(std::forward<F>(func), std::forward<Types>(args)...);
-
         std::unique_lock<std::mutex> lock(this->mutex);
-        if (state != State::kRun) {
+        if (state != State::kRun || current_queue_size == max_queue_size) {
             return false;
         }
 
         // Enqueue new task
+        current_queue_size++;
         tasks.push_back(exec);
-        empty_condition.notify_one();
+        if (free_threads == 0 && threads.size() < high_watermark) {
+            {
+                std::lock_guard<std::mutex> _lock(mutex);
+                free_threads++;
+                threads.emplace_back(std::thread([this] { perform(this); }));
+                threads.back().detach();
+            }
+        } else if (threads.size() < high_watermark) {
+            empty_condition.notify_one();
+        }
         return true;
     }
 
@@ -73,6 +87,13 @@ private:
      */
     friend void perform(Executor *executor);
 
+    std::vector<std::thread>::iterator find_thread() {
+        std::thread::id thread_id = std::this_thread::get_id();
+        auto it = std::find_if(threads.begin(), threads.end(),
+                               [thread_id](std::thread &t) { return (t.get_id() == thread_id); });
+        return it;
+    }
+
     /**
      * Mutex to protect state below from concurrent modification
      */
@@ -82,9 +103,8 @@ private:
      * Conditional variable to await new data in case of empty queue
      */
     std::condition_variable empty_condition;
-
     /**
-     * Vector of actual threads that perorm execution
+     * Vector of actual threads that perform execution
      */
     std::vector<std::thread> threads;
 
@@ -97,6 +117,19 @@ private:
      * Flag to stop bg threads
      */
     State state;
+
+    std::size_t  low_watermark;
+    std::size_t  high_watermark;
+    std::size_t  max_queue_size;
+    std::chrono::milliseconds idle_time;
+
+    std::condition_variable _stop_pool;
+
+    std::size_t free_threads;
+    std::size_t current_queue_size = 0;
+
+    std::string name;
+    std::size_t size;
 };
 
 } // namespace Concurrency
