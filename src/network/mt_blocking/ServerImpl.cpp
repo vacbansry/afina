@@ -28,12 +28,12 @@ namespace Network {
 namespace MTblocking {
 
 // See Server.h
-ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl, std::size_t capacity,
-                       std::time_t read_timeout)
-        : Server(ps, pl, capacity, read_timeout) {}
+ServerImpl::ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl,
+        std::size_t capacity, std::time_t read_timeout)
+    : Server(ps, pl, capacity, read_timeout) {}
 
 // See Server.h
-ServerImpl::~ServerImpl() {}
+    ServerImpl::~ServerImpl() {}
 
 // See Server.h
 void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
@@ -64,12 +64,13 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
         throw std::runtime_error("Socket setsockopt() failed");
     }
 
-    if (bind(_server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+    if (bind(_server_socket, (struct sockaddr *) &server_addr, sizeof(server_addr)) == -1) {
         close(_server_socket);
         throw std::runtime_error("Socket bind() failed");
     }
 
     if (listen(_server_socket, 5) == -1) {
+
         close(_server_socket);
         throw std::runtime_error("Socket listen() failed");
     }
@@ -82,7 +83,7 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
 void ServerImpl::Stop() {
     running.store(false);
     std::lock_guard<std::mutex> _lock(change_count);
-    for (auto socket : _client_sockets) {
+    for (auto socket: _client_sockets) {
         shutdown(socket, SHUT_RD);
     }
     shutdown(_server_socket, SHUT_RDWR);
@@ -92,7 +93,7 @@ void ServerImpl::Stop() {
 void ServerImpl::Join() {
     assert(_thread.joinable());
     std::unique_lock<std::mutex> _lock(change_count);
-    cond_var.wait(_lock, [this] { return _client_sockets.empty(); });
+    cond_var.wait(_lock, [this] { return !running.load() && _client_sockets.empty(); });
     _thread.join();
 }
 
@@ -105,7 +106,8 @@ void ServerImpl::OnRun() {
         int client_socket;
         struct sockaddr client_addr;
         socklen_t client_addr_len = sizeof(client_addr);
-        if ((client_socket = accept(_server_socket, (struct sockaddr *)&client_addr, &client_addr_len)) == -1) {
+        if ((client_socket = accept(_server_socket, (struct sockaddr *) &client_addr, &client_addr_len)) ==
+            -1) {
             continue;
         }
 
@@ -119,7 +121,8 @@ void ServerImpl::OnRun() {
                 host = hbuf;
                 port = sbuf;
             }
-            _logger->debug("Accepted connection on descriptor {} (host={}, port={})\n", client_socket, host, port);
+            _logger->debug("Accepted connection on descriptor {} (host={}, port={})\n", client_socket, host,
+                           port);
         }
 
         // Configure read timeout
@@ -127,7 +130,7 @@ void ServerImpl::OnRun() {
             struct timeval tv;
             tv.tv_sec = read_timeout; // TODO: make it configurable
             tv.tv_usec = 0;
-            setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof tv);
+            setsockopt(client_socket, SOL_SOCKET, SO_RCVTIMEO, (const char *) &tv, sizeof tv);
         }
 
         // TODO: Start new thread and process data from/to connection
@@ -239,21 +242,10 @@ void ServerImpl::Work(int client_socket) {
     close(client_socket);
 
     {
-        std::lock_guard<std::mutex> guard(change_count);
-        count_connections--;
+        std::lock_guard <std::mutex> guard(change_count);
         _client_sockets.erase(client_socket);
-        if (!running.load() && !count_connections) {
+        if (!running.load() && !_client_sockets.size()) {
             cond_var.notify_all();
-        }
-        // We are done with this connection
-        close(client_socket);
-
-        {
-            std::lock_guard<std::mutex> guard(change_count);
-            _client_sockets.erase(client_socket);
-            if (!running.load() && !_client_sockets.size()) {
-                cond_var.notify_all();
-            }
         }
     }
 }
