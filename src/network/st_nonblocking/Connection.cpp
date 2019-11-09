@@ -1,6 +1,8 @@
 #include "Connection.h"
 
 #include <iostream>
+#include <sys/uio.h>
+#include <unistd.h>
 
 namespace Afina {
 namespace Network {

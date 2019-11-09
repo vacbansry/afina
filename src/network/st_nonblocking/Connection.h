@@ -1,8 +1,11 @@
 #ifndef AFINA_NETWORK_ST_NONBLOCKING_CONNECTION_H
 #define AFINA_NETWORK_ST_NONBLOCKING_CONNECTION_H
 
+#include <afina/execute/Command.h>
+#include <protocol/Parser.h>
+#include <afina/logging/Service.h>
 #include <cstring>
-
+#include <list>
 #include <sys/epoll.h>
 
 namespace Afina {
