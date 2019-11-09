@@ -7,19 +7,19 @@ namespace Network {
 namespace STnonblock {
 
 // See Connection.h
-void Connection::Start() { std::cout << "Start" << std::endl; }
+    void Connection::Start() { std::cout << "Start" << std::endl; }
 
 // See Connection.h
-void Connection::OnError() { std::cout << "OnError" << std::endl; }
+    void Connection::OnError() { std::cout << "OnError" << std::endl; }
 
 // See Connection.h
-void Connection::OnClose() { std::cout << "OnClose" << std::endl; }
+    void Connection::OnClose() { std::cout << "OnClose" << std::endl; }
 
 // See Connection.h
-void Connection::DoRead() { std::cout << "DoRead" << std::endl; }
+    void Connection::DoRead() { std::cout << "DoRead" << std::endl; }
 
 // See Connection.h
-void Connection::DoWrite() { std::cout << "DoWrite" << std::endl; }
+    void Connection::DoWrite() { std::cout << "DoWrite" << std::endl; }
 
 } // namespace STnonblock
 } // namespace Network

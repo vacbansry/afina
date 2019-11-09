@@ -9,29 +9,29 @@ namespace Afina {
 namespace Network {
 namespace STnonblock {
 
-class Connection {
-public:
-    Connection(int s) : _socket(s) {
-        std::memset(&_event, 0, sizeof(struct epoll_event));
-        _event.data.ptr = this;
-    }
+    class Connection {
+    public:
+        Connection(int s) : _socket(s) {
+            std::memset(&_event, 0, sizeof(struct epoll_event));
+            _event.data.ptr = this;
+        }
 
-    inline bool isAlive() const { return true; }
+        inline bool isAlive() const { return true; }
 
-    void Start();
+        void Start();
 
-protected:
-    void OnError();
-    void OnClose();
-    void DoRead();
-    void DoWrite();
+    protected:
+        void OnError();
+        void OnClose();
+        void DoRead();
+        void DoWrite();
 
-private:
-    friend class ServerImpl;
+    private:
+        friend class ServerImpl;
 
-    int _socket;
-    struct epoll_event _event;
-};
+        int _socket;
+        struct epoll_event _event;
+    };
 
 } // namespace STnonblock
 } // namespace Network
