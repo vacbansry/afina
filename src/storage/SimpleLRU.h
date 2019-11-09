@@ -15,6 +15,7 @@ namespace Backend {
  * # Map based implementation
  * That is NOT thread safe implementaiton!!
  */
+
  class SimpleLRU : public Afina::Storage {
     public:
         SimpleLRU(size_t max_size = 1024) : _max_size(max_size) {}
