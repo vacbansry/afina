@@ -20,7 +20,9 @@ void perform(Executor *executor) {
         std::function<void()> task = executor->tasks.front();
         executor->tasks.pop_front();
         _lock.unlock();
-        task();
+        try {
+            task();
+        } catch (...) {}
         _lock.lock();
         executor->free_threads++;
     }
