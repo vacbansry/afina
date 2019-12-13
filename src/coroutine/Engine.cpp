@@ -1,7 +1,6 @@
 #include <afina/coroutine/Engine.h>
 
 #include <setjmp.h>
-#include <stdio.h>
 #include <string.h>
 
 namespace Afina {
@@ -22,7 +21,7 @@ void Engine::Store(context &ctx) {
 
 void Engine::Restore(context &ctx) {
     char curr_pos;
-    if (&curr_pos >= ctx.High) {
+    if (&curr_pos >= ctx.Low) {
         Restore(ctx);
     }
     memcpy(ctx.Low, std::get<0>(ctx.Stack), std::get<1>(ctx.Stack));
@@ -33,18 +32,23 @@ void Engine::yield() {
     context *calling = alive;
     if (calling == cur_routine && calling != nullptr) {
         calling = calling->next;
-    } else if (calling == nullptr) {
+    }
+
+    if (calling == nullptr) {
         return;
     }
     sched(calling);
 }
 
 void Engine::sched(void *routine_) {
-    if (cur_routine != nullptr) {
-        setjmp(cur_routine->Environment);
+    context *ctx = static_cast<context *>(routine_);
+    if (ctx != nullptr) {
+        if (setjmp(cur_routine->Environment) > 0) {
+            return;
+        }
         Store(*cur_routine);
     }
-    cur_routine = (context*) routine_;
+    cur_routine = ctx;
     Restore(*cur_routine);
 }
 
