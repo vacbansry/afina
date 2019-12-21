@@ -4,8 +4,6 @@
 #include <thread>
 #include <vector>
 #include <afina/network/Server.h>
-#include <unordered_set>
-#include "Connection.h"
 
 namespace spdlog {
 class logger;
@@ -38,7 +36,6 @@ public:
 
 protected:
     void OnRun();
-    void OnNewConnection();
 
 private:
     // logger to use
@@ -64,8 +61,6 @@ private:
 
     // threads serving read/write requests
     std::vector<Worker> _workers;
-
-    std::unordered_set<Connection *> _connections;
 };
 
 } // namespace MTnonblock

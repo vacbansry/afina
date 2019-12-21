@@ -81,7 +81,6 @@ private:
 
     // EPOLL descriptor using for events processing
     int _epoll_fd;
-
 };
 
 } // namespace MTnonblock
