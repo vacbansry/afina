@@ -6,6 +6,7 @@
 #include <thread>
 #include <condition_variable>
 #include <afina/network/Server.h>
+#include <afina/concurrency/Executor.h>
 
 namespace spdlog {
 class logger;
@@ -49,18 +50,20 @@ private:
     // flag must be atomic in order to safely publish changes cross thread
     // bounds
     std::atomic <bool> running;
-    bool waiting_worker = false;
+
     // Server socket to accept connections on
     int _server_socket;
 
-    std::size_t count_connections = 0;
-
     std::mutex change_count;
+
     std::unordered_set<int> _client_sockets;
     std::condition_variable cond_var;
 
     // Thread to run network on
     std::thread _thread;
+
+    Afina::Concurrency::Executor *_executor;
+    std::size_t low_watermark = 3;
 };
 
 } // namespace MTblocking

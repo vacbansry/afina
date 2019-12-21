@@ -8,14 +8,18 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include <chrono>
+#include <algorithm>
+#include <iostream>
 
 namespace Afina {
 namespace Concurrency {
 
 /**
- * # Thread pool
- */
+* # Thread pool
+*/
 class Executor {
+public:
     enum class State {
         // Threadpool is fully operational, tasks could be added and get executed
         kRun,
@@ -24,11 +28,12 @@ class Executor {
         // completed as requested
         kStopping,
 
-        // Threadppol is stopped
+        // Threadpool is stopped
         kStopped
     };
 
-    Executor(std::string name, int size);
+    Executor(std::size_t lw, std::size_t hw, std::size_t max_size, std::chrono::milliseconds idle_time);
+
     ~Executor();
 
     /**
@@ -50,13 +55,22 @@ class Executor {
         // Prepare "task"
         auto exec = std::bind(std::forward<F>(func), std::forward<Types>(args)...);
 
-        std::unique_lock<std::mutex> lock(this->mutex);
-        if (state != State::kRun) {
-            return false;
-        }
+        {
+            std::unique_lock<std::mutex> lock(this->mutex);
+            if (state != State::kRun || tasks.size() == max_queue_size) {
+                return false;
+            }
 
-        // Enqueue new task
-        tasks.push_back(exec);
+            // Enqueue new task
+            tasks.push_back(exec);
+            if (free_threads == 0 && existing_threads < high_watermark) {
+                {
+                    std::thread([this] { perform(this); }).detach();
+                    free_threads++;
+                    existing_threads++;
+                }
+            }
+        }
         empty_condition.notify_one();
         return true;
     }
@@ -84,11 +98,6 @@ private:
     std::condition_variable empty_condition;
 
     /**
-     * Vector of actual threads that perorm execution
-     */
-    std::vector<std::thread> threads;
-
-    /**
      * Task queue
      */
     std::deque<std::function<void()>> tasks;
@@ -97,6 +106,16 @@ private:
      * Flag to stop bg threads
      */
     State state;
+
+    std::size_t  low_watermark;
+    std::size_t  high_watermark;
+    std::size_t  max_queue_size;
+    std::chrono::milliseconds idle_time;
+
+    std::condition_variable _stop_pool;
+
+    std::size_t free_threads;
+    std::size_t existing_threads;
 };
 
 } // namespace Concurrency

@@ -18,9 +18,9 @@ namespace STnonblock {
 class Worker;
 
 /**
- * # Network resource manager implementation
- * Epoll based server
- */
+* # Network resource manager implementation
+* Epoll based server
+*/
 class ServerImpl : public Server {
 public:
     ServerImpl(std::shared_ptr<Afina::Storage> ps, std::shared_ptr<Logging::Service> pl);

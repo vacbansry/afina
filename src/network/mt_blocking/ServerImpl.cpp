@@ -16,7 +16,6 @@
 #include <unistd.h>
 
 #include <spdlog/logger.h>
-
 #include <afina/Storage.h>
 #include <afina/execute/Command.h>
 #include <afina/logging/Service.h>
@@ -76,6 +75,7 @@ void ServerImpl::Start(uint16_t port, uint32_t n_accept, uint32_t n_workers) {
     }
 
     running.store(true);
+    _executor = new Afina::Concurrency::Executor (low_watermark, low_watermark + 1, 5, std::chrono::milliseconds(5));
     _thread = std::thread(&ServerImpl::OnRun, this);
 }
 
@@ -136,9 +136,8 @@ void ServerImpl::OnRun() {
         // TODO: Start new thread and process data from/to connection
         {
             std::lock_guard<std::mutex> lock(change_count);
-            if (running.load() && count_connections < _server_capacity) {
+            if (running.load() && _executor->Execute(&ServerImpl::Work, this, client_socket)) {
                 _client_sockets.insert(client_socket);
-                std::thread([this, client_socket]() { ServerImpl::Work(client_socket); }).detach();
             } else {
                 close(client_socket);
             }
