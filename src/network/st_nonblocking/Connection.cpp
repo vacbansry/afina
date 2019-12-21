@@ -4,6 +4,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <cassert>
+#include <algorithm>
 
 namespace Afina {
 namespace Network {
@@ -92,7 +93,7 @@ void Connection::DoRead() {
                     // Send response
                     result += "\r\n";
                     if (_results.empty()) {
-                        _event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLERR;
+                        _event.events = EPOLLOUT | EPOLLRDHUP | EPOLLERR;
                     }
                     _results.push_back(result);
 
@@ -105,6 +106,7 @@ void Connection::DoRead() {
         }
     } catch (std::runtime_error &ex) {
         _logger->error("Failed to process connection on descriptor {}: {}", client_socket, ex.what());
+        running.store(false);
     }
 }
 
@@ -115,16 +117,17 @@ void Connection::DoWrite() {
 
     struct iovec buffers[N];
     auto _results_it = _results.begin();
+    std::size_t max_size = std::min(std::size_t(N), _results.size());
 
-    for (auto i = 0; i < _results.size(); ++i, ++_results_it) {
+    for (std::size_t i = 0; i < max_size; ++i, ++_results_it) {
         buffers[i].iov_base = &(*_results_it)[0];
-        buffers[i].iov_len = (*_results_it).size();
+        buffers[i].iov_len = _results_it->size();
     }
 
     buffers[0].iov_base = (char *) buffers[0].iov_base + _first_byte;
     buffers[0].iov_len -= _first_byte;
 
-    auto amount_placed_bytes = writev(_socket, buffers, _results.size());
+    auto amount_placed_bytes = writev(_socket, buffers, max_size);
     if (amount_placed_bytes == -1) {
         throw std::runtime_error(std::string(strerror(errno)));
     }
