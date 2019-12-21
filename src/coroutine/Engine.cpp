@@ -47,10 +47,10 @@ void Engine::yield() {
 
 void Engine::sched(void *routine_) {
     context *ctx = static_cast<context *>(routine_);
+    if (ctx == nullptr) {
+        yield();
+    }
     if (cur_routine != routine_) {
-        if (ctx == nullptr) {
-            yield();
-        }
         if (setjmp(cur_routine->Environment) > 0) {
             return;
         }
