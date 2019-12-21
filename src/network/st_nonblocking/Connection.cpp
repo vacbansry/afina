@@ -112,7 +112,7 @@ void Connection::DoRead() {
 
 // See Connection.h
 void Connection::DoWrite() {
-    assert(_results.empty() == 0);
+    assert(_results.empty() == false);
     _logger->debug("Writing on {}", _socket);
 
     struct iovec buffers[N];
