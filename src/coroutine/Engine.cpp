@@ -50,7 +50,7 @@ void Engine::sched(void *routine_) {
     if (ctx == nullptr) {
         yield();
     }
-    if (cur_routine != routine_) {
+    if (cur_routine != routine_ && cur_routine != idle_ctx) {
         if (setjmp(cur_routine->Environment) > 0) {
             return;
         }
