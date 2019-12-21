@@ -42,8 +42,14 @@ private:
 
     std::shared_ptr<spdlog::logger> _logger;
     std::shared_ptr<Afina::Storage> pStorage;
+    Protocol::Parser parser;
+    std::string argument_for_command;
+    std::unique_ptr<Execute::Command> command_to_execute;
+    std::size_t arg_remains = 0;
 
-    std::size_t _first_byte = 0;
+    char client_buffer[4096];
+    int _first_byte = 0;
+    int _read_bytes = 0;
     std::list<std::string> _results;
 };
 
