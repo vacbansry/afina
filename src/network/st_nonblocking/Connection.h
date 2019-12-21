@@ -33,6 +33,8 @@ protected:
     void DoWrite();
 
 private:
+    enum { N = 64 };
+
     friend class ServerImpl;
 
     int _socket;

@@ -112,8 +112,8 @@ void Connection::DoRead() {
 void Connection::DoWrite() {
     assert(_results.empty() == 0);
     _logger->debug("Writing on {}", _socket);
-    std::size_t idx = 0;
-    struct iovec buffers[_results.size()];
+
+    struct iovec buffers[N];
     auto _results_it = _results.begin();
 
     for (auto i = 0; i < _results.size(); ++i, ++_results_it) {
