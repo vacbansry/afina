@@ -7,13 +7,13 @@ namespace Afina {
 namespace Coroutine {
 
 void Engine::Store(context &ctx) {
-    char curr_pos;
+    volatile char curr_pos;
     ctx.Low = StackBottom;
     ctx.High = StackBottom;
     if (&curr_pos > ctx.Low) {
-        ctx.High = &curr_pos;
+        ctx.High = (char *) &curr_pos;
     } else {
-        ctx.Low = &curr_pos;
+        ctx.Low = (char *) &curr_pos;
     }
     std::size_t size = ctx.High - ctx.Low;
     if (size > std::get<1>(ctx.Stack)) {
@@ -25,8 +25,8 @@ void Engine::Store(context &ctx) {
 }
 
 void Engine::Restore(context &ctx) {
-    char curr_pos;
-    if (&curr_pos >= ctx.Low) {
+    volatile char curr_pos;
+    if (&curr_pos >= ctx.Low && &curr_pos <= ctx.High) {
         Restore(ctx);
     }
     memcpy(ctx.Low, std::get<0>(ctx.Stack), std::get<1>(ctx.Stack));
@@ -35,7 +35,7 @@ void Engine::Restore(context &ctx) {
 
 void Engine::yield() {
     context *calling = alive;
-    if (calling == cur_routine && calling != nullptr) {
+    while (calling == cur_routine && calling != nullptr) {
         calling = calling->next;
     }
 
@@ -49,11 +49,12 @@ void Engine::sched(void *routine_) {
     context *ctx = static_cast<context *>(routine_);
     if (cur_routine != routine_) {
         if (ctx != nullptr) {
-            if (setjmp(cur_routine->Environment) > 0) {
-                return;
-            }
-            Store(*cur_routine);
+            yield();
         }
+        if (setjmp(cur_routine->Environment) > 0) {
+            return;
+        }
+        Store(*cur_routine);
         cur_routine = ctx;
         Restore(*cur_routine);
     }
