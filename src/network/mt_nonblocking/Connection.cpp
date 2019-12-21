@@ -97,7 +97,7 @@ void Connection::DoRead() {
                     // Send response
                     result += "\r\n";
                     if (_results.empty()) {
-                        _event.events = EPOLLIN | EPOLLOUT | EPOLLRDHUP | EPOLLERR;
+                        _event.events = EPOLLOUT | EPOLLRDHUP | EPOLLERR;
                     }
                     _results.push_back(result);
 
@@ -116,39 +116,41 @@ void Connection::DoRead() {
 // See Connection.h
 void Connection::DoWrite() {
     std::unique_lock<std::mutex> lock(_lock);
-    //assert(_results.empty() == 0);
-    _logger->debug("Writing on {}", _socket);
+    if (_results.empty() == false) {
+        _logger->debug("Writing on {}", _socket);
 
-    struct iovec buffers[N];
-    auto _results_it = _results.begin();
+        struct iovec buffers[N];
+        auto _results_it = _results.begin();
+        std::size_t max_size = std::min(std::size_t(N), _results.size());
 
-    for (auto i = 0; i < _results.size(); ++i, ++_results_it) {
-        buffers[i].iov_base = &(*_results_it)[0];
-        buffers[i].iov_len = (*_results_it).size();
-    }
-
-    buffers[0].iov_base = (char *) buffers[0].iov_base + _first_byte;
-    buffers[0].iov_len -= _first_byte;
-
-    auto amount_placed_bytes = writev(_socket, buffers, _results.size());
-    if (amount_placed_bytes == -1) {
-        throw std::runtime_error(std::string(strerror(errno)));
-    }
-    _first_byte += amount_placed_bytes;
-
-    _results_it = _results.begin();
-    for (auto result : _results) {
-        if (_first_byte < result.size()) {
-            break;
+        for (auto i = 0; i < max_size; ++i, ++_results_it) {
+            buffers[i].iov_base = &(*_results_it)[0];
+            buffers[i].iov_len = _results_it->size();
         }
-        _first_byte -= result.size();
-        _results_it++;
-    }
 
-    _results.erase(_results.begin(), _results_it);
+        buffers[0].iov_base = (char *) buffers[0].iov_base + _first_byte;
+        buffers[0].iov_len -= _first_byte;
 
-    if(_results.empty()) {
-        _event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
+        auto amount_placed_bytes = writev(_socket, buffers, max_size);
+        if (amount_placed_bytes == -1) {
+            throw std::runtime_error(std::string(strerror(errno)));
+        }
+        _first_byte += amount_placed_bytes;
+
+        _results_it = _results.begin();
+        for (auto result : _results) {
+            if (_first_byte < result.size()) {
+                break;
+            }
+            _first_byte -= result.size();
+            _results_it++;
+        }
+
+        _results.erase(_results.begin(), _results_it);
+
+        if (_results.empty()) {
+            _event.events = EPOLLIN | EPOLLRDHUP | EPOLLERR;
+        }
     }
 }
 
