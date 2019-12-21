@@ -26,7 +26,7 @@ private:
         char *Low = nullptr;
 
         // coroutine stack end address
-        char *Hight = nullptr;
+        char *High = nullptr;
 
         // coroutine stack copy buffer
         std::tuple<char *, uint32_t> Stack = std::make_tuple(nullptr, 0);
@@ -83,7 +83,7 @@ public:
     /**
      * Gives up current routine execution and let engine to schedule other one. It is not defined when
      * routine will get execution back, for example if there are no other coroutines then executing could
-     * be trasferred back immediately (yield turns to be noop).
+     * be transferred back immediately (yield turns to be noop).
      *
      * Also there are no guarantee what coroutine will get execution, it could be caller of the current one or
      * any other which is ready to run
@@ -132,7 +132,7 @@ public:
     }
 
     /**
-     * Register new coroutine. It won't receive control until scheduled explicitely or implicitly. In case of some
+     * Register new coroutine. It won't receive control until scheduled explicitly or implicitly. In case of some
      * errors function returns -1
      */
     template <typename... Ta> void *run(void (*func)(Ta...), Ta &&... args) {
