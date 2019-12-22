@@ -29,7 +29,8 @@ void Engine::Restore(context &ctx) {
     if (&curr_pos >= ctx.Low && &curr_pos <= ctx.High) {
         Restore(ctx);
     }
-    memcpy(ctx.Low, std::get<0>(ctx.Stack), std::get<1>(ctx.Stack));
+    std::size_t size = ctx.High - ctx.Low;
+    memcpy(ctx.Low, std::get<0>(ctx.Stack), size);
     longjmp(ctx.Environment, 1);
 }
 
